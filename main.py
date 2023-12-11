@@ -2,6 +2,7 @@ from state import State, State_2
 import time
 from importlib import import_module
 
+dict_player = {1: 'X', -1: 'O'}
   
 def main(player_X, player_O, rule = 2):
     dict_player = {1: 'X', -1: 'O'}
@@ -20,9 +21,10 @@ def main(player_X, player_O, rule = 2):
     
     
     while turn <= limit:
-        print("turn:", turn, end='\n\n')
+        #print("turn:", turn, end='\n\n')
         if cur_state.game_over:
             print("winner:", dict_player[cur_state.player_to_move * -1])
+            return dict_player[cur_state.player_to_move * -1]
             break
         
         start_time = time.time()
@@ -49,7 +51,7 @@ def main(player_X, player_O, rule = 2):
             break
         
         cur_state.act_move(new_move)
-        print(cur_state)
+        #print(cur_state)
         
         turn += 1
         
@@ -59,6 +61,36 @@ def main(player_X, player_O, rule = 2):
 
 #main('random_agent', '_MSSV')
 #main('_MSSV', 'random_agent')
-main('_MSSV new', '_MSSV old')
+def main_1 ():
+    X_winning = 0
+    O_winning = 0
+    for i in range(0,5):
+        result = main('_MSSV new', 'random_agent') 
+        if result == 'X' :
+            X_winning += 1
+        elif result == 'O' : 
+            O_winning += 1
+    print ("============================================")
+    print ("X winning: ", X_winning)
+    print ("O winning: ", O_winning)
 
- 
+def main_2 ():
+    X_winning = 0
+    O_winning = 0
+    for i in range(0,5):
+        result = main('random_agent', '_MSSV new') 
+        if result == 'X' :
+            X_winning += 1
+        elif result == 'O' : 
+            O_winning += 1
+    print ("============================================")
+    print ("X winning: ", X_winning)
+    print ("O winning: ", O_winning)
+
+print("Playing as X: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+main_1()
+print("Playing as O: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+main_2()
+
+#main('_MSSV new', '_MSSV old') 
+

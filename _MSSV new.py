@@ -1,6 +1,7 @@
 import numpy as np
-from state import State_2
+from state import *
 import math
+import random 
 
 def minimax_pruning(state, depth, alpha, beta, maximizing_player):
     if depth == 0 or state.game_over:
@@ -10,15 +11,13 @@ def minimax_pruning(state, depth, alpha, beta, maximizing_player):
     if maximizing_player:
         value = -math.inf
         for move in legal_moves:
-            #print ("Move 2---: ")
-            #print (move)
+            
             next_state = State_2(state)
             next_state.free_move = state.free_move
-            #print (next_state)
-            #print ("Block: -------")
-            #print (next_state.global_cells)
+            
             next_state.act_move(move)
             value = max(value, minimax_pruning(next_state, depth - 1, alpha, beta, False))
+            if (state.free_move == True): value += 2
             alpha = max(alpha, value)
             if beta <= alpha:
                 break  # pruning
@@ -26,163 +25,150 @@ def minimax_pruning(state, depth, alpha, beta, maximizing_player):
     else:
         value = math.inf
         for move in legal_moves:
-            #print ("Move 3---: ")
-            #print (move)
+            
             next_state = State_2(state)
             next_state.free_move = state.free_move
-            #print (next_state)
-            #print ("Block: -------")
-            #print (next_state.global_cells)
+            
             next_state.act_move(move)
             value = min(value, minimax_pruning(next_state, depth - 1, alpha, beta, True))
+            if (state.free_move == True): value -= 2
             beta = min(beta, value)
             if beta <= alpha:
                 break  # pruning
         return value
 
-'''def evaluate_state(state):
-    winner = state.game_result(state.global_cells.reshape(3, 3))
-    #if winner == State_2.X:
-    if winner == state.player_to_move:
-        return 1  # Player wins
-    elif winner == state.player_to_move*(-1):
-        return -1  # Opponent wins
-    elif state.game_over:
-        return 0  # It's a draw
-    
-    # Custom scoring for the game state
-    score = 0
-
-    # Count the number of Xs and Os in the global cells
-    count_X = state.count_X
-    count_O = state.count_O
-
-    # Ensure that count_X and count_O are scalar values
-    score += count_X - count_O
-    
-
-    # Bonus for having winning moves in the global board
-    winning_moves_X = sum(1 for block in state.blocks if state.game_result(block) == State_2.X)
-    winning_moves_O = sum(1 for block in state.blocks if state.game_result(block) == State_2.O)
-    
-    score += (winning_moves_X - winning_moves_O) * 3
-   
-    # Bonus for controlling the center of the global board
-    #center_cell = state.blocks[1][1]  # Center cell of the center block
-    #score += center_cell * 2  # Add more weight if it's occupied
-    
-    return score'''
-
-
-
 def evaluate_state(state):
     winner = state.game_result(state.global_cells.reshape(3, 3))
-    # Winning the game
-    if winner == state.player_to_move:
-        return 50  # Player wins
-    elif winner == state.player_to_move*(-1):
-        return -50  # Opponent wins
+
+    if winner == state.player_to_move * (-1):
+        return 100
+    elif winner == state.player_to_move:
+        return -100
     elif state.game_over:
-        return 0  # It's a draw
+        return 0
 
-    # Custom scoring for the game state
     score = 0
+    #if (state.free_move == True and max_player == True): score += 2
+    #elif (state.free_move == True and max_player == False): score -= 2
 
-    # Feature: Small board wins add 5 points
-    for x in [0,8]:
+    # Cache results of game_result
+    result_cache = {tuple(state.blocks[i].flatten()): state.game_result(state.blocks[i]) for i in range(9)}
 
-        #block_winner = state.game_result(block)
-        if state.game_result(state.blocks[x]) == state.player_to_move:
+    for x in range(9):
+        block_result = result_cache[tuple(state.blocks[x].flatten())]
+
+        if block_result == state.player_to_move* (-1):
             score += 5
-            # Feature: Winning the center board adds 10
-            if x == 4: score += 10
-            # Feature: Winning the corner board
-            if x in [0, 2, 6, 8]: score += 3
-
-        elif state.game_result(state.blocks[x]) == state.player_to_move*(-1):
+            if x == 4:
+                score += 10
+            if x in [0, 2, 6, 8]:
+                score += 3
+        elif block_result == state.player_to_move:
             score -= 5
-            if x == 4: score -= 10
-            if x in [0, 2, 6, 8]: score -= 3
+            if x == 4:
+                score -= 10
+            if x in [0, 2, 6, 8]:
+                score -= 3
 
-        # Feature: Getting a center square in any small board is worth 3
-        if state.blocks[x][1, 1] == state.player_to_move: 
-            score += 3
-            if x == 4: score += 3
-        elif state.blocks[x][1, 1] == state.player_to_move*(-1): 
-            score -= 3
-            if x == 4: score -= 3
+        center_square = state.blocks[x][1, 1]
+        if center_square == state.player_to_move * (-1):
+            score += 4
+            if x == 4:
+                score += 3
+        elif center_square == state.player_to_move :
+            score -= 4
+            if x == 4:
+                score -= 3
 
+        for i in range(3):
+            row_sum = np.sum(state.blocks[x][i, :])
+            row_zero = np.count_nonzero(state.blocks[x][i, :])
+            #print(row_zero)
+            col_sum = np.sum(state.blocks[x][:, i])
+            col_zero = np.count_nonzero(state.blocks[x][:, i])
 
+            if abs(row_sum) == 2:
+                score += -4 * (row_sum // 2 == state.player_to_move)
+            if abs(col_sum) == 2:
+                score += -4 * (col_sum // 2 == state.player_to_move)
+            if abs(row_sum) == 1 and row_zero == 3: 
+                score += 2 * (row_sum // 1 == state.player_to_move)
+            if abs(col_sum) == 1 and col_zero == 3:
+                score += 2 * (col_sum // 1 == state.player_to_move)
+
+        diag_sum1 = np.sum(np.diag(state.blocks[x]))
+        diag1_zero = np.count_nonzero(np.diag(state.blocks[x]))
+        diag_sum2 = np.sum(np.diag(np.fliplr(state.blocks[x])))
+        diag2_zero = np.count_nonzero(np.diag(np.fliplr(state.blocks[x])))
+
+        if abs(diag_sum1) == 2:
+            score += -4 * (diag_sum1 // 2 == state.player_to_move)
+        if abs(diag_sum1) == 1 and diag1_zero == 3:
+            score += 2 * (diag_sum1 // 1 == state.player_to_move)
+        if abs(diag_sum2) == 2:
+            score += -4 * (diag_sum2 // 2 == state.player_to_move)
+        if abs(diag_sum2) == 1 and diag2_zero == 3:
+            score += 2 * (diag_sum2 // 1 == state.player_to_move)
+
+    for j in [0, 3, 6]:
+        row_sum = np.sum(state.global_cells[j:j+3])
+        row_zero = np.count_nonzero(state.global_cells[j:j+3])
+        if abs(row_sum) == 2:
+            score += -2 * (row_sum // 2 == state.player_to_move)
+        if abs(row_sum) == 1 and row_zero == 3:
+            score += 2 * (row_sum // 1 == state.player_to_move)
+
+        col_sum = np.sum(state.global_cells[j::3])
+        col_zero = np.count_nonzero(state.global_cells[j::3])
+        if abs(col_sum) == 2:
+            score += -2 * (col_sum // 2 == state.player_to_move)
+        if abs(col_sum) == 1 and col_zero == 3:
+            score += 2 * (col_sum // 1 == state.player_to_move)
+
+    diag_sum1 = np.sum(np.diag(state.global_cells.reshape(3, 3)))
+    diag1_zero = np.count_nonzero(np.diag(state.global_cells.reshape(3, 3)))
+    diag_sum2 = np.sum(np.diag(np.fliplr(state.global_cells.reshape(3, 3))))
+    diag2_zero = np.count_nonzero(np.diag(np.fliplr(state.global_cells.reshape(3, 3))))
+
+    if abs(diag_sum1) == 2:
+        score += -4 * (diag_sum1 // 2 == state.player_to_move)
+    if abs(diag_sum2) == 2:
+        score += -4 * (diag_sum2 // 2 == state.player_to_move)
+    if abs(diag_sum1) == 1 and diag1_zero == 3:
+        score += 2 * (diag_sum1 // 1 == state.player_to_move)
+    if abs(diag_sum2) == 1 and diag2_zero == 3:
+        score += 2 * (diag_sum2 // 1 == state.player_to_move)
 
     return score
+
         
-        
-    
-
-        # Feature: Two board wins which can be continued for a winning sequence are worth 4 points
-        #for i in range(3):
-        #    if (
-        #        state.game_result(state.blocks[i]) == State_2.X
-        #        and state.game_result(state.blocks[i + 3]) == State_2.X
-        ##    ):
-         #       score += 4
-         #   elif (
-        #        state.game_result(state.blocks[i]) == State_2.O
-         #       and state.game_result(state.blocks[i + 3]) == State_2.O
-         #   ):
-          #      score -= 4
-
-        # Feature: A similar sequence inside a small board is worth 2 points
-        #for block in state.blocks:
-         #   if (
-          #      block[0, 0] == block[1, 1] == State_2.X
-           #     or block[0, 2] == block[1, 1] == State_2.X
-           # ):
-            #    score += 2
-           # elif (
-            #    block[0, 0] == block[1, 1] == State_2.O
-            #    or block[0, 2] == block[1, 1] == State_2.O
-           # ):
-            #    score -= 2
-
-        # Feature: If you are sent to a small board that is full or won, add 2 points to the heuristic
-        #if state.previous_move and state.blocks[
-         #   state.previous_move.index_local_board
-        #].all() != 0:
-         #   score += 2'''
-    
-
 
 def select_move(cur_state, remain_time):
     legal_moves = cur_state.get_valid_moves
     best_move = None
+    best_moves = []  # List to store moves with the best value
     best_value = -math.inf
+    alpha = -math.inf
+    beta = math.inf
 
-    if (cur_state.previous_move is None):
-        return np.random.choice(legal_moves)
+    '''if cur_state.previous_move is None:
+        #return np.random.choice(legal_moves)
+        return UltimateTTT_Move(4, 1, 1, cur_state.player_to_move)'''
 
     for move in legal_moves:
-        #print ("Move 1---: ")
-        #print (move)
         next_state = State_2(cur_state)
         next_state.free_move = cur_state.free_move
         next_state.act_move(move)
         
-        #next_state.player_to_move *= -1
-        #next_state.previous_move = move
-        value = minimax_pruning(next_state, depth=4, alpha=-math.inf, beta=math.inf, maximizing_player=False)
+        value = minimax_pruning(next_state, depth=2, alpha=alpha, beta=beta, maximizing_player=False)
 
         if value > best_value:
             best_value = value
-            best_move = move
-    #print ("Best move: ")
-    #print (best_move)
-    
-    return best_move
+            best_moves = [move]  # Start a new list for the best move
+        elif value == best_value:
+            best_moves.append(move)  # Add the move to the list
 
-'''def select_move(cur_state, remain_time):
-    # If player plays the first move => choose random cell
-    valid_moves = cur_state.get_valid_moves
-    if len(valid_moves) != 0:
-        return np.random.choice(valid_moves)
-    return None'''
+        alpha = max(alpha, best_value)
+    if best_moves == []: return None
+    # Choose a random move from the list of best moves
+    return random.choice(best_moves)

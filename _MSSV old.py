@@ -10,13 +10,10 @@ def minimax_pruning(state, depth, alpha, beta, maximizing_player):
     if maximizing_player:
         value = -math.inf
         for move in legal_moves:
-            #print ("Move 2---: ")
-            #print (move)
+            
             next_state = State_2(state)
             next_state.free_move = state.free_move
-            #print (next_state)
-            #print ("Block: -------")
-            #print (next_state.global_cells)
+            
             next_state.act_move(move)
             value = max(value, minimax_pruning(next_state, depth - 1, alpha, beta, False))
             alpha = max(alpha, value)
@@ -26,53 +23,16 @@ def minimax_pruning(state, depth, alpha, beta, maximizing_player):
     else:
         value = math.inf
         for move in legal_moves:
-            #print ("Move 3---: ")
-            #print (move)
+            
             next_state = State_2(state)
             next_state.free_move = state.free_move
-            #print (next_state)
-            #print ("Block: -------")
-            #print (next_state.global_cells)
+            
             next_state.act_move(move)
             value = min(value, minimax_pruning(next_state, depth - 1, alpha, beta, True))
             beta = min(beta, value)
             if beta <= alpha:
                 break  # pruning
         return value
-
-'''def evaluate_state(state):
-    winner = state.game_result(state.global_cells.reshape(3, 3))
-    #if winner == State_2.X:
-    if winner == state.player_to_move:
-        return 1  # Player wins
-    elif winner == state.player_to_move*(-1):
-        return -1  # Opponent wins
-    elif state.game_over:
-        return 0  # It's a draw
-    
-    # Custom scoring for the game state
-    score = 0
-
-    # Count the number of Xs and Os in the global cells
-    count_X = state.count_X
-    count_O = state.count_O
-
-    # Ensure that count_X and count_O are scalar values
-    score += count_X - count_O
-    
-
-    # Bonus for having winning moves in the global board
-    winning_moves_X = sum(1 for block in state.blocks if state.game_result(block) == State_2.X)
-    winning_moves_O = sum(1 for block in state.blocks if state.game_result(block) == State_2.O)
-    
-    score += (winning_moves_X - winning_moves_O) * 3
-   
-    # Bonus for controlling the center of the global board
-    #center_cell = state.blocks[1][1]  # Center cell of the center block
-    #score += center_cell * 2  # Add more weight if it's occupied
-    
-    return score'''
-
 
 
 def evaluate_state(state):
@@ -85,14 +45,13 @@ def evaluate_state(state):
     elif state.game_over:
         return 0  # It's a draw
 
+    score = 0;
     # Custom scoring for the game state
-    score = 0
-
-    # Feature: Small board wins add 5 points
-    for x in [0,8]:
+    for x in range(0,9):
 
         #block_winner = state.game_result(block)
         if state.game_result(state.blocks[x]) == state.player_to_move:
+            # Feature: Small board wins add 5 points
             score += 5
             # Feature: Winning the center board adds 10
             if x == 4: score += 10
@@ -103,7 +62,7 @@ def evaluate_state(state):
             score -= 5
             if x == 4: score -= 10
             if x in [0, 2, 6, 8]: score -= 3
-
+        
         # Feature: Getting a center square in any small board is worth 3
         if state.blocks[x][1, 1] == state.player_to_move: 
             score += 3
@@ -112,44 +71,79 @@ def evaluate_state(state):
             score -= 3
             if x == 4: score -= 3
 
+        # small board
+        # Row 
+        for i in range(0,3):
+            sum = 0
+            for j in range(0,3): sum += state.blocks[x][i, j]
+            if (sum == 2 or sum == -2):
+                if sum/2 == state.player_to_move: 
+                    score += 2
+                else: score -= 2
+
+        # Column boards potential
+        for j in range(0,3):
+            sum = 0
+            for i in range(0,3): sum += state.blocks[x][j, i]
+            if (sum == 2 or sum == -2):
+                if sum/2 == state.player_to_move: 
+                    score += 2
+                else: score -= 2
+
+        # Cross boards potential
+        sum = 0
+        for i in range(0,3):
+            sum += state.blocks[x][i, i]
+        if (sum == 2 or sum == -2):
+            if sum/2 == state.player_to_move: 
+                score += 2
+            else: score -= 2
+
+        sum = 0
+        for i in range(0,3):
+            sum += state.blocks[x][i, 2-i]
+        if (sum == 2 or sum == -2):
+            if sum/2 == state.player_to_move: 
+                score += 2
+            else: score -= 2
+
+    # Row boards potential
+    for j in [0,3,6]:
+        sum = 0
+        for i in range(0,3): sum += state.global_cells[i+j]
+        if (sum == 2 or sum == -2):
+            if sum/2 == state.player_to_move: 
+                score += 4
+            else: score -= 4
+
+    # Column boards potential
+    for j in range(0,3):
+        sum = 0
+        for i in [0,3,6]: sum += state.global_cells[i+j]
+        if (sum == 2 or sum == -2):
+            if sum/2 == state.player_to_move: 
+                score += 4
+            else: score -= 4
+
+    # Cross boards potential
+    sum = 0
+    for i in [0,4,8]:
+        sum += state.global_cells[i]
+    if (sum == 2 or sum == -2):
+        if sum/2 == state.player_to_move: 
+            score += 4
+        else: score -= 4
+
+    sum = 0
+    for i in [2,4,6]:
+        sum += state.global_cells[i]
+    if (sum == 2 or sum == -2):
+        if sum/2 == state.player_to_move: 
+            score += 4
+        else: score -= 4
+
     return score
         
-        
-    
-
-        # Feature: Two board wins which can be continued for a winning sequence are worth 4 points
-        #for i in range(3):
-        #    if (
-        #        state.game_result(state.blocks[i]) == State_2.X
-        #        and state.game_result(state.blocks[i + 3]) == State_2.X
-        ##    ):
-         #       score += 4
-         #   elif (
-        #        state.game_result(state.blocks[i]) == State_2.O
-         #       and state.game_result(state.blocks[i + 3]) == State_2.O
-         #   ):
-          #      score -= 4
-
-        # Feature: A similar sequence inside a small board is worth 2 points
-        #for block in state.blocks:
-         #   if (
-          #      block[0, 0] == block[1, 1] == State_2.X
-           #     or block[0, 2] == block[1, 1] == State_2.X
-           # ):
-            #    score += 2
-           # elif (
-            #    block[0, 0] == block[1, 1] == State_2.O
-            #    or block[0, 2] == block[1, 1] == State_2.O
-           # ):
-            #    score -= 2
-
-        # Feature: If you are sent to a small board that is full or won, add 2 points to the heuristic
-        #if state.previous_move and state.blocks[
-         #   state.previous_move.index_local_board
-        #].all() != 0:
-         #   score += 2'''
-    
-
 
 def select_move(cur_state, remain_time):
     legal_moves = cur_state.get_valid_moves
@@ -168,9 +162,9 @@ def select_move(cur_state, remain_time):
         
         #next_state.player_to_move *= -1
         #next_state.previous_move = move
-        value = minimax_pruning(next_state, depth=3, alpha=-math.inf, beta=math.inf, maximizing_player=False)
+        value = minimax_pruning(next_state, depth=1, alpha=-math.inf, beta=math.inf, maximizing_player=False)
 
-        if value > best_value:
+        if value >= best_value:
             best_value = value
             best_move = move
     #print ("Best move: ")
@@ -178,9 +172,3 @@ def select_move(cur_state, remain_time):
     
     return best_move
 
-'''def select_move(cur_state, remain_time):
-    # If player plays the first move => choose random cell
-    valid_moves = cur_state.get_valid_moves
-    if len(valid_moves) != 0:
-        return np.random.choice(valid_moves)
-    return None'''
