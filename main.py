@@ -65,7 +65,7 @@ def main_1 ():
     X_winning = 0
     O_winning = 0
     for i in range(0,5):
-        result = main('_MSSV new', 'random_agent') 
+        result = main('_MSSV new', '_MSSV old') 
         if result == 'X' :
             X_winning += 1
         elif result == 'O' : 
@@ -78,7 +78,7 @@ def main_2 ():
     X_winning = 0
     O_winning = 0
     for i in range(0,5):
-        result = main('random_agent', '_MSSV new') 
+        result = main('_MSSV old', '_MSSV new') 
         if result == 'X' :
             X_winning += 1
         elif result == 'O' : 

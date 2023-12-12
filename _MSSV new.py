@@ -1,6 +1,7 @@
 import numpy as np
 from state import *
 import math
+import time
 import random 
 
 def minimax_pruning(state, depth, alpha, beta, maximizing_player):
@@ -74,11 +75,11 @@ def evaluate_state(state):
         if center_square == state.player_to_move * (-1):
             score += 4
             if x == 4:
-                score += 3
+                score += 5
         elif center_square == state.player_to_move :
             score -= 4
             if x == 4:
-                score -= 3
+                score -= 5
 
         for i in range(3):
             row_sum = np.sum(state.blocks[x][i, :])
@@ -92,9 +93,9 @@ def evaluate_state(state):
             if abs(col_sum) == 2:
                 score += -4 * (col_sum // 2 == state.player_to_move)
             if abs(row_sum) == 1 and row_zero == 3: 
-                score += 2 * (row_sum // 1 == state.player_to_move)
+                score += 3 * (row_sum // 1 == state.player_to_move)
             if abs(col_sum) == 1 and col_zero == 3:
-                score += 2 * (col_sum // 1 == state.player_to_move)
+                score += 3 * (col_sum // 1 == state.player_to_move)
 
         diag_sum1 = np.sum(np.diag(state.blocks[x]))
         diag1_zero = np.count_nonzero(np.diag(state.blocks[x]))
@@ -104,11 +105,11 @@ def evaluate_state(state):
         if abs(diag_sum1) == 2:
             score += -4 * (diag_sum1 // 2 == state.player_to_move)
         if abs(diag_sum1) == 1 and diag1_zero == 3:
-            score += 2 * (diag_sum1 // 1 == state.player_to_move)
+            score += 3 * (diag_sum1 // 1 == state.player_to_move)
         if abs(diag_sum2) == 2:
             score += -4 * (diag_sum2 // 2 == state.player_to_move)
         if abs(diag_sum2) == 1 and diag2_zero == 3:
-            score += 2 * (diag_sum2 // 1 == state.player_to_move)
+            score += 3 * (diag_sum2 // 1 == state.player_to_move)
 
     for j in [0, 3, 6]:
         row_sum = np.sum(state.global_cells[j:j+3])
@@ -116,14 +117,14 @@ def evaluate_state(state):
         if abs(row_sum) == 2:
             score += -2 * (row_sum // 2 == state.player_to_move)
         if abs(row_sum) == 1 and row_zero == 3:
-            score += 2 * (row_sum // 1 == state.player_to_move)
+            score += 3 * (row_sum // 1 == state.player_to_move)
 
         col_sum = np.sum(state.global_cells[j::3])
         col_zero = np.count_nonzero(state.global_cells[j::3])
         if abs(col_sum) == 2:
             score += -2 * (col_sum // 2 == state.player_to_move)
         if abs(col_sum) == 1 and col_zero == 3:
-            score += 2 * (col_sum // 1 == state.player_to_move)
+            score += 3 * (col_sum // 1 == state.player_to_move)
 
     diag_sum1 = np.sum(np.diag(state.global_cells.reshape(3, 3)))
     diag1_zero = np.count_nonzero(np.diag(state.global_cells.reshape(3, 3)))
@@ -135,9 +136,9 @@ def evaluate_state(state):
     if abs(diag_sum2) == 2:
         score += -4 * (diag_sum2 // 2 == state.player_to_move)
     if abs(diag_sum1) == 1 and diag1_zero == 3:
-        score += 2 * (diag_sum1 // 1 == state.player_to_move)
+        score += 3 * (diag_sum1 // 1 == state.player_to_move)
     if abs(diag_sum2) == 1 and diag2_zero == 3:
-        score += 2 * (diag_sum2 // 1 == state.player_to_move)
+        score += 3 * (diag_sum2 // 1 == state.player_to_move)
 
     return score
 
@@ -151,11 +152,10 @@ def select_move(cur_state, remain_time):
     alpha = -math.inf
     beta = math.inf
 
-    '''if cur_state.previous_move is None:
-        #return np.random.choice(legal_moves)
-        return UltimateTTT_Move(4, 1, 1, cur_state.player_to_move)'''
-
+    start_time = time.time()
     for move in legal_moves:
+        cur_time = time.time()
+        if (cur_time - start_time >= 8.0): break
         next_state = State_2(cur_state)
         next_state.free_move = cur_state.free_move
         next_state.act_move(move)
